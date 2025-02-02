@@ -1,35 +1,56 @@
-version: '3.8'
+version: "3.8"
+
+networks:
+  app_network:
+    driver: bridge
 
 services:
   fastapi:
-    build:
-      context: .
-      dockerfile: docker/fastapi/Dockerfile
+    image: nayeembd/fastapi-app:latest
+    build: .
+    container_name: fastapi_service
+    restart: always
+    env_file: .env
     ports:
-      - "8000:8000"
+      - "${APP_PORT}:${APP_PORT}"
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./app:/app
+    networks:
+      - app_network
+
+  celery_worker:
+    image: nayeembd/celery-worker:latest
+    build: .
+    container_name: celery_worker
+    restart: always
+    env_file: .env
     depends_on:
       - redis
-      - mongodb
+    networks:
+      - app_network
+    command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
 
-  celery:
-    build:
-      context: .
-      dockerfile: docker/celery/Dockerfile
-    depends_on:
-      - redis
-      - mongodb
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-  mongodb:
-    image: mongo:6.0
-    ports:
-      - "27017:27017"
+  mongo:
+    image: mongo:latest
+    container_name: mongodb_service
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app_network
+
+  redis:
+    image: redis:alpine
+    container_name: redis_service
+    restart: always
+    networks:
+      - app_network
 
 volumes:
   mongo_data:

@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from tasks import create_task
 from pymongo import MongoClient
+import os
 
-client = MongoClient("mongodb://mongodb:27017/")
-db = client["celery_db"]
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongodb:27017/")
+MONGO_DB_NAME = os.getenv("MONGO_DB", "celery_db")
+
+client = MongoClient(MONGO_URI)
+db = client[MONGO_DB_NAME]
 collection = db["task_results"]
 
 app = FastAPI()

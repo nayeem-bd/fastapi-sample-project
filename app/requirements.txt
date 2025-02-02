@@ -3,3 +3,4 @@ uvicorn
 celery
 redis
 pymongo
+python-dotenv
